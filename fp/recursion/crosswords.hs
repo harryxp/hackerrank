@@ -1,16 +1,17 @@
+import Control.Monad (replicateM)
 import Data.Array
-import Data.List (intercalate, intersect, permutations)
+import Data.List (intercalate, intersect, permutations, transpose)
 import Data.List.Split (splitOn)
-import Data.Matrix (Matrix, fromLists, getCol, ncols, getRow, nrows)
-import Data.Vector (Vector, toList)
 import Text.Regex.Posix (MatchArray, Regex, matchAll, makeRegex)
 
 import Test.HUnit
 
 ---- top level
 
+dimension = 10
+
 main :: IO ()
-main = mapM (\_ -> getLine) [1..11] >>= (putStrLn . solveCrosswords)
+main = replicateM (dimension+1) getLine >>= (putStrLn . solveCrosswords)
 
 type Coordinates = (Int, Int)
 
@@ -34,25 +35,25 @@ tests = TestList
 
 parseInput :: [String] -> ([Blank], [String])
 parseInput input =
-  let grid :: Matrix Char
-      grid = (fromLists . take 10) input
+  let grid :: [String]
+      grid = take dimension input
       words :: [String]
-      words = (splitOn ";" . head . drop 10) input
-      hBlanks = (concat . map (constructBlanksFromVector 'h') . getIndiceAndRows) grid
-      vBlanks = (concat . map (constructBlanksFromVector 'v') . getIndiceAndCols) grid
+      words = (splitOn ";" . head . drop dimension) input
+      hBlanks = (concat . map (constructBlanksFromList 'h') . getIndiceAndRows) grid
+      vBlanks = (concat . map (constructBlanksFromList 'v') . getIndiceAndCols) grid
   in
     (hBlanks ++ vBlanks, words)
 
-getIndiceAndRows :: Matrix a -> [(Int, Vector a)]
-getIndiceAndRows m = map (\i -> (i, getRow i m)) [1..nrows m]
+getIndiceAndRows :: [[a]] -> [(Int, [a])]
+getIndiceAndRows m = zip [1..dimension] m
 
-getIndiceAndCols :: Matrix a -> [(Int, Vector a)]
-getIndiceAndCols m = map (\i -> (i, getCol i m)) [1..ncols m]
+getIndiceAndCols :: [[a]] -> [(Int, [a])]
+getIndiceAndCols m = getIndiceAndRows (transpose m)
 
-constructBlanksFromVector :: Char -> (Int, Vector Char) -> [Blank]
-constructBlanksFromVector hOrV (index, v) =
+constructBlanksFromList :: Char -> (Int, String) -> [Blank]
+constructBlanksFromList hOrV (index, v) =
   let segments :: [MatchArray]
-      segments = matchAll (makeRegex "--+" :: Regex) (toList v) -- at least two minuses
+      segments = matchAll (makeRegex "--+" :: Regex) v -- at least two minuses
   in
     map (constructBlank hOrV index) segments
 
