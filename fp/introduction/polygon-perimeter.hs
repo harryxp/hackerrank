@@ -4,7 +4,7 @@ main :: IO ()
 main = getContents >>= putStrLn . show . perimeter . parseLines . lines
 
 parseLines :: [String] -> [Point]
-parseLines (_:xs) = map ((\(y1:y2:ys) -> (y1,y2)) . map read . words) xs
+parseLines (_:xs) = map ((\(y1:y2:_) -> (y1,y2)) . map read . words) xs
 parseLines [] = error "This cannot happen."
 
 perimeter :: [Point] -> Float
