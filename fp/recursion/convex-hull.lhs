@@ -1,7 +1,16 @@
-> import Data.List (maximumBy,partition,sortOn)
+> import Data.List (maximumBy,partition)
 > import Text.Printf
 
-This is an implementation of the Quickhull algorithm.  See https://en.wikipedia.org/wiki/Quickhull.
+This implements the Quickhull algorithm.  See https://en.wikipedia.org/wiki/Quickhull.
+
+One thing that helped debugging was plotting the points to visually check the convex hull.  To do so, fire up gnuplot and do something like:
+
+  plot "convex-hull-test-2-plot.txt"
+  plot "convex-hull-test-2-plot.txt" using 1:2:(sprintf("(%d, %d)", $1, $2)) with labels notitle
+
+Also, hackerrank doesn't support Literate Haskell files so you need to convert this file via:
+
+  perl -ne 'if (m/^> (.*)$/) {print "$1\n";}' convex-hull.lhs > convex-hull.hs
 
 TODO could use a faster thing than maximumBy
 
@@ -15,6 +24,8 @@ Entrance of the Quickhull algorithm.  Basically prepare the data for recursion i
 
 Note the way we arrange leftmost and rightmost points - it's crucial to do this so that the points are arranged clockwise.
 
+Also note that the points that are on the convex hull but "sandwiched" between others are not included.
+
 > quickHull :: [Point] -> [Point]
 > quickHull points =
 >   let
@@ -23,7 +34,7 @@ Note the way we arrange leftmost and rightmost points - it's crucial to do this 
 >     line :: Line
 >     line = (leftmost,rightmost)
 >     (leftHalf,rightHalf) =  -- the line divides the convex hull
->       partition (isOnLeftOf line) $ filter (isNotOn line) points
+>       partition (isToTheLeftOf line) $ filter (isNotOn line) points
 >   in
 >     (leftmost:findHull leftHalf line True) ++
 >     (rightmost:findHull rightHalf line False)
@@ -31,11 +42,11 @@ Note the way we arrange leftmost and rightmost points - it's crucial to do this 
 Decide the point's position relative to the line.
 http://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
 
-> isOnLeftOf :: Line -> Point -> Bool
-> isOnLeftOf line pt = linePointPosition line pt > 0
+> isToTheLeftOf :: Line -> Point -> Bool
+> isToTheLeftOf line pt = linePointPosition line pt > 0
 
-> isOnRightOf :: Line -> Point -> Bool
-> isOnRightOf line pt = linePointPosition line pt < 0
+> isToTheRightOf :: Line -> Point -> Bool
+> isToTheRightOf line pt = linePointPosition line pt < 0
 
 > isNotOn :: Line -> Point -> Bool
 > isNotOn line pt = linePointPosition line pt /= 0
@@ -54,7 +65,7 @@ Recursively find the hull.  shouldSearchLeftward is used to guide:
 >     farthest = maximumBy (compareDistances line) pts
 >     newLine1 = (ptLeft,farthest)
 >     newLine2 = (farthest,ptRight)
->     pred = if shouldSearchLeftward then isOnLeftOf else isOnRightOf
+>     pred = if shouldSearchLeftward then isToTheLeftOf else isToTheRightOf
 >     newPts1 = filter (pred newLine1) pts
 >     newPts2 = filter (pred newLine2) pts
 >   in
