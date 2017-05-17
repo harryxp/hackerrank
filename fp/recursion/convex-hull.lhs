@@ -29,8 +29,8 @@ Also note that the points that are on the convex hull but "sandwiched" between o
 > quickHull :: [Point] -> [Point]
 > quickHull points =
 >   let
->     leftmost = minimum points
->     rightmost = maximum points
+>     leftmost = minimum points   -- lower left when there's a tie
+>     rightmost = maximum points  -- upper right when there's a tie
 >     line :: Line
 >     line = (leftmost,rightmost)
 >     (leftHalf,rightHalf) =  -- the line divides the convex hull
