@@ -3,7 +3,8 @@
 > import Text.ParserCombinators.ReadP (ReadP, readP_to_S, satisfy)
 > import Text.Printf (printf)
 
-> import qualified Data.Map as Map (Map)
+> import qualified Data.Map as Map (Map,fromList)
+
 
 Main
 ====
@@ -18,7 +19,8 @@ Main
 >   replicateM_ numQueries runQuery
 
 > runQuery :: IO ()
-> runQuery n = undefined
+> runQuery = undefined
+
 
 Tree
 ====
@@ -86,7 +88,45 @@ The string should be parsed into one tree, and one tree only.
 Rule
 ====
 
+The next state of a cell is determined by itself and 3 neighbors.  This means
+that a rule (that describes all the behaviors of a given automaton) only needs
+to specify a next state for each possible pattern of 4 cells:
+
+1111 1110 1101 ... 0000
+
+In this problem, this means 1 rules is just 16 pattern-state pairs, and there
+are 2^16 possible rules.
+
+> numCellsInNeighborhood = 4
+> numStatesForEachCell = 2
+> numPatternsForEachRule = numStatesForEachCell^numCellsInNeighborhood  -- 16
+
+Build a rule that goes from cell patterns to True/False.  For example rule 7710 is
+"0000" -> False
+"0001" -> True
+"0010" -> True
+"0011" -> True
+"0100" -> True
+"0101" -> False
+"0110" -> False
+"0111" -> False
+"1000" -> False
+"1001" -> True
+"1010" -> True
+"1011" -> True
+"1100" -> True
+"1101" -> False
+"1110" -> False
+"1111" -> False
+
 > type Rule = Map.Map String Bool
 >
 > buildRule :: Int -> Rule
-> buildRule = undefined
+> buildRule ruleNum =
+>   let values :: [Bool]
+>       values = map (\c -> if c=='1' then True else False) (printf "%016b" ruleNum)
+>       keys :: [String]
+>       keys = map (printf "%04b") ([numPatternsForEachRule-1,numPatternsForEachRule-2..0]::[Int])
+>   in Map.fromList (zip keys values)
+>
+
