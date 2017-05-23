@@ -1,5 +1,5 @@
 > import Control.Applicative ((<|>))
-> import Control.Monad (replicateM_)
+> import Control.Monad (foldM)
 > import Text.ParserCombinators.ReadP (ReadP, readP_to_S, satisfy)
 > import Text.Printf (printf)
 
@@ -9,16 +9,16 @@
 Main
 ====
 
-> main :: IO ()
+> main :: IO Tree
 > main = do
 >   ruleNum <- readLn :: IO Int
 >   treeStr <- getLine
 >   let rule = buildRule ruleNum
 >       tree = parseTree treeStr
 >   numQueries <- readLn :: IO Int
->   replicateM_ numQueries runQuery
+>   foldM (\prevTree query -> query prevTree) tree (replicate numQueries (runQuery rule))
 
-> runQuery :: IO ()
+> runQuery :: Rule -> Tree -> IO Tree
 > runQuery = undefined
 
 
