@@ -1,13 +1,27 @@
 > import Control.Applicative ((<|>))
+> import Control.Monad (replicateM_)
 > import Text.ParserCombinators.ReadP (ReadP, readP_to_S, satisfy)
 > import Text.Printf (printf)
+
+> import qualified Data.Map as Map (Map)
+
+Main
+====
 
 > main :: IO ()
 > main = do
 >   ruleNum <- readLn :: IO Int
 >   treeStr <- getLine
->   let tree = parseTree treeStr
->   undefined
+>   let rule = buildRule ruleNum
+>       tree = parseTree treeStr
+>   numQueries <- readLn :: IO Int
+>   replicateM_ numQueries runQuery
+
+> runQuery :: IO ()
+> runQuery n = undefined
+
+Tree
+====
 
 > data Tree = Branch { value :: Bool
 >                    , left :: Tree
@@ -33,16 +47,16 @@ The string should be parsed into one tree, and one tree only.
 > parseTree s = case readP_to_S treeP s of
 >   [(tree,"")] -> tree
 >   otherwise -> error "Can't parse the tree."
-> 
+>
 > treeP :: ReadP Tree
 > treeP = onLeafP <|> offLeafP <|> branchP
-> 
+>
 > onLeafP :: ReadP Tree
 > onLeafP = satisfy (== 'X') >> return (Leaf { value = True, parent = Nil })
-> 
+>
 > offLeafP :: ReadP Tree
 > offLeafP = satisfy (== '.') >> return (Leaf { value = False, parent = Nil })
-> 
+>
 > branchP :: ReadP Tree
 > branchP = do
 >   satisfy (== '(')
@@ -53,10 +67,10 @@ The string should be parsed into one tree, and one tree only.
 >   rChild <- treeP
 >   satisfy (== ')')
 >   return (buildBranch value lChild rChild)
-> 
+>
 > buildBranch :: Char -> Tree -> Tree -> Tree
 > buildBranch v lChild rChild =
->   let b = if v == 'X' then True else False
+>   let b = v == 'X'
 >       br = Branch { value = b, left = lChild', right = rChild', parent = Nil }
 >       lChild' = setParent br lChild
 >       rChild' = setParent br rChild
@@ -68,3 +82,11 @@ The string should be parsed into one tree, and one tree only.
 >       Branch { value = v, left = l, right = r, parent = br }
 >     setParent _ t = error ("This is an impossible case" ++ show t)
 
+
+Rule
+====
+
+> type Rule = Map.Map String Bool
+>
+> buildRule :: Int -> Rule
+> buildRule = undefined
