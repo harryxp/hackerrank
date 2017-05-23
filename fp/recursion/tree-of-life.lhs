@@ -3,7 +3,7 @@
 > import Text.ParserCombinators.ReadP (ReadP, readP_to_S, satisfy)
 > import Text.Printf (printf)
 
-> import qualified Data.Map as Map (Map,fromList)
+> import qualified Data.Map as Map (Map,fromList,lookup)
 
 
 Main
@@ -16,32 +16,62 @@ Main
 >   let rule = buildRule ruleNum
 >       tree = parseTree treeStr
 >   numQueries <- readLn :: IO Int
->   foldM (\prevTree query -> query prevTree) tree (replicate numQueries (runQuery rule))
+>   foldM (\tree query -> query tree) tree (replicate numQueries (runQuery rule))
 
 > runQuery :: Rule -> Tree -> IO Tree
-> runQuery = undefined
+> runQuery rule tree = do
+>   numStepsAndPath <- getLine
+>   let [numSteps',path'] = words numStepsAndPath
+>       numSteps :: Int
+>       numSteps = read numSteps'
+>       path :: String
+>       path = (tail . reverse . tail . reverse) path'
+>       newTree :: Tree
+>       newTree = transformTree rule tree Top
+>   putStrLn (followPath newTree path)
+>   return newTree
 
+> transformTree :: Rule -> Tree -> Tree -> Tree
+> transformTree rule node@(Branch { left = l, right = r }) parent =
+>   let key = map getCellValue [parent,l,node,r]
+>       maybeValue = Map.lookup key rule
+>   in case maybeValue of
+>     Just v ->
+>       Branch { value = v, left = transformTree rule l node, right = transformTree rule r node }
+>     Nothing -> impossible
+> transformTree rule node@(Leaf {}) parent =
+>   let key = [getCellValue parent,'0',getCellValue node,'0']
+>       maybeValue = Map.lookup key rule
+>   in case maybeValue of
+>     Just v -> Leaf { value = v }
+>     Nothing -> impossible
+> transformTree _ Top _ = impossible
+
+> getCellValue :: Tree -> Char
+> getCellValue (Branch { value = v }) = if v then '1' else '0'
+> getCellValue (Leaf { value = v })  = if v then '1' else '0'
+> getCellValue Top = '0'
+
+> followPath :: Tree -> String -> String
+> followPath = undefined
 
 Tree
 ====
 
-> data Tree = Branch { value :: Bool
+> data Tree = Top    | -- virtual node serves as the parent of root
+>             Branch { value :: Bool
 >                    , left :: Tree
 >                    , right :: Tree
->                    , parent :: Tree
->                    } |
+>                    }
+>                    |
 >             Leaf   { value :: Bool
->                    , parent :: Tree
->                    } |
->             Nil     -- parent of root, also serves as a placeholder
-
-The `show` function ignores parents to avoid indefinite loops.
+>                    }
 
 > instance Show Tree where
->   show (Branch { value = v, left = l, right = r, parent = _ }) =
->     printf "Branch { value = %s, left = %s, right %s }" (show v) (show l) (show r)
->   show (Leaf { value = v, parent = _ }) = printf "Leaf { value = %s }" (show v)
->   show Nil = "Nil"
+>   show (Branch { value = v, left = l, right = r }) =
+>     printf "(%s %s %s)" (show l) (if v then "X" else ".") (show r)
+>   show (Leaf { value = v }) = if v then "X" else "."
+>   show Top = impossible
 
 The string should be parsed into one tree, and one tree only.
 
@@ -54,35 +84,21 @@ The string should be parsed into one tree, and one tree only.
 > treeP = onLeafP <|> offLeafP <|> branchP
 >
 > onLeafP :: ReadP Tree
-> onLeafP = satisfy (== 'X') >> return (Leaf { value = True, parent = Nil })
+> onLeafP = satisfy (== 'X') >> return (Leaf { value = True })
 >
 > offLeafP :: ReadP Tree
-> offLeafP = satisfy (== '.') >> return (Leaf { value = False, parent = Nil })
+> offLeafP = satisfy (== '.') >> return (Leaf { value = False })
 >
 > branchP :: ReadP Tree
 > branchP = do
 >   satisfy (== '(')
 >   lChild <- treeP
 >   satisfy (== ' ')
->   value <- satisfy (== 'X') <|> satisfy (== '.')
+>   v <- satisfy (== 'X') <|> satisfy (== '.')
 >   satisfy (== ' ')
 >   rChild <- treeP
 >   satisfy (== ')')
->   return (buildBranch value lChild rChild)
->
-> buildBranch :: Char -> Tree -> Tree -> Tree
-> buildBranch v lChild rChild =
->   let b = v == 'X'
->       br = Branch { value = b, left = lChild', right = rChild', parent = Nil }
->       lChild' = setParent br lChild
->       rChild' = setParent br rChild
->   in br
->   where
->     setParent _ Nil = Nil
->     setParent br (Leaf { value = v, parent = Nil }) = Leaf { value = v, parent = br }
->     setParent br (Branch { value = v, left = l, right = r, parent = Nil }) =
->       Branch { value = v, left = l, right = r, parent = br }
->     setParent _ t = error ("This is an impossible case" ++ show t)
+>   return (Branch { value = (v == 'X'), left = lChild, right = rChild })
 
 
 Rule
@@ -129,4 +145,11 @@ Build a rule that goes from cell patterns to True/False.  For example rule 7710 
 >       keys = map (printf "%04b") ([numPatternsForEachRule-1,numPatternsForEachRule-2..0]::[Int])
 >   in Map.fromList (zip keys values)
 >
+
+
+Misc
+====
+
+> impossible :: a
+> impossible = error "This cannot happen."
 
