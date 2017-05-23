@@ -5,11 +5,15 @@
 
 > import qualified Data.Map as Map (Map,fromList,lookup)
 
+hackerrank doesn't support Literate Haskell files so you need to convert this file via:
+
+  perl -ne 'if (m/^> (.*)$/) {print "$1\n";}' tree-of-life.lhs > tree-of-life.hs
+
 
 Main
 ====
 
-> main :: IO Tree
+> main :: IO ()
 > main = do
 >   ruleNum <- readLn :: IO Int
 >   treeStr <- getLine
@@ -17,6 +21,7 @@ Main
 >       tree = parseTree treeStr
 >   numQueries <- readLn :: IO Int
 >   foldM (\tree query -> query tree) tree (replicate numQueries (runQuery rule))
+>   return ()
 
 > runQuery :: Rule -> Tree -> IO Tree
 > runQuery rule tree = do
@@ -27,25 +32,25 @@ Main
 >       path :: String
 >       path = (tail . reverse . tail . reverse) path'
 >       newTree :: Tree
->       newTree = transformTree rule tree Top
+>       newTree = (last . take (numSteps+1) . iterate (transformTree rule Top)) tree
 >   putStrLn (followPath newTree path)
 >   return newTree
 
 > transformTree :: Rule -> Tree -> Tree -> Tree
-> transformTree rule node@(Branch { left = l, right = r }) parent =
+> transformTree rule parent node@(Branch { left = l, right = r }) =
 >   let key = map getCellValue [parent,l,node,r]
 >       maybeValue = Map.lookup key rule
 >   in case maybeValue of
 >     Just v ->
->       Branch { value = v, left = transformTree rule l node, right = transformTree rule r node }
+>       Branch { value = v, left = transformTree rule node l, right = transformTree rule node r }
 >     Nothing -> impossible
-> transformTree rule node@(Leaf {}) parent =
+> transformTree rule parent node@(Leaf {}) =
 >   let key = [getCellValue parent,'0',getCellValue node,'0']
 >       maybeValue = Map.lookup key rule
 >   in case maybeValue of
 >     Just v -> Leaf { value = v }
 >     Nothing -> impossible
-> transformTree _ Top _ = impossible
+> transformTree _ _ Top = impossible
 
 > getCellValue :: Tree -> Char
 > getCellValue (Branch { value = v }) = if v then '1' else '0'
@@ -53,7 +58,11 @@ Main
 > getCellValue Top = '0'
 
 > followPath :: Tree -> String -> String
-> followPath = undefined
+> followPath tree "" = if value tree then "X" else "."
+> followPath (Branch { left = l }) ('<':xs) = followPath l xs
+> followPath (Branch { right = r }) ('>':xs) = followPath r xs
+> followPath _ _ = impossible
+
 
 Tree
 ====
