@@ -19,22 +19,22 @@ Main
 >   treeStr <- getLine
 >   let rule = buildRule ruleNum
 >       tree = parseTree treeStr
+>       trees = iterate (transformTree rule Top) tree -- infinite list
 >   numQueries <- readLn :: IO Int
->   foldM (\tree query -> query tree) tree (replicate numQueries (runQuery rule))
+>   foldM (\tree query -> query tree) (tree,0) (replicate numQueries (runQuery trees rule))
 >   return ()
 
-> runQuery :: Rule -> Tree -> IO Tree
-> runQuery rule tree = do
->   numStepsAndPath <- getLine
->   let [numSteps',path'] = words numStepsAndPath
->       numSteps :: Int
->       numSteps = read numSteps'
+> runQuery :: [Tree] -> Rule -> (Tree,Int) -> IO (Tree,Int)
+> runQuery trees rule (tree,step) = do
+>   stepAndPath <- getLine
+>   let [newStep',path'] = words stepAndPath
+>       newStep = (read newStep' + step)
 >       path :: String
 >       path = (tail . reverse . tail . reverse) path'
 >       newTree :: Tree
->       newTree = (last . take (numSteps+1) . iterate (transformTree rule Top)) tree
+>       newTree = trees !! newStep
 >   putStrLn (followPath newTree path)
->   return newTree
+>   return (newTree,newStep)
 
 > transformTree :: Rule -> Tree -> Tree -> Tree
 > transformTree rule parent node@(Branch { left = l, right = r }) =
@@ -53,9 +53,8 @@ Main
 > transformTree _ _ Top = impossible
 
 > getCellValue :: Tree -> Char
-> getCellValue (Branch { value = v }) = if v then '1' else '0'
-> getCellValue (Leaf { value = v })  = if v then '1' else '0'
 > getCellValue Top = '0'
+> getCellValue node = if value node then '1' else '0'
 
 > followPath :: Tree -> String -> String
 > followPath tree "" = if value tree then "X" else "."
@@ -149,7 +148,7 @@ Build a rule that goes from cell patterns to True/False.  For example rule 7710 
 > buildRule :: Int -> Rule
 > buildRule ruleNum =
 >   let values :: [Bool]
->       values = map (\c -> if c=='1' then True else False) (printf "%016b" ruleNum)
+>       values = map (=='1') (printf "%016b" ruleNum)
 >       keys :: [String]
 >       keys = map (printf "%04b") ([numPatternsForEachRule-1,numPatternsForEachRule-2..0]::[Int])
 >   in Map.fromList (zip keys values)
