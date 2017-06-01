@@ -1,5 +1,5 @@
 import Data.List (intercalate)
-import Text.ParserCombinators.ReadP ((<++),ReadP,eof,many1,readP_to_S,satisfy,skipSpaces)
+import Text.ParserCombinators.ReadP -- ((+++),(<++),ReadP,char,eof,munch1,option,readP_to_S)
 
 class Evaluable t where
   eval :: t -> Int
@@ -40,7 +40,7 @@ p = 1000000007
 
 main :: IO ()
 --main = getLine >>= print . parseExpr
-main = getLine >>= print . (`mod` p) . eval . parseExpr
+main = getLine >>= print . (`mod` p) . eval . parseExpr . filter (/=' ')
 
 -- Parser
 
@@ -53,73 +53,57 @@ allP :: ReadP Expression
 allP = exprP >>= \e -> eof >> return e
 
 exprP :: ReadP Expression
-exprP = exprAddP <++ exprSubP <++ exprTermP
-
-exprAddP :: ReadP Expression
-exprAddP = binaryOpP '+' termP exprP ExprAdd
-
-exprSubP :: ReadP Expression
-exprSubP = binaryOpP '-' termP exprP ExprSub
-
-exprTermP :: ReadP Expression
-exprTermP = do
+exprP = do
   t <- termP
-  (return . ExprTerm) t
+  op <- option ' ' (char '+' +++ char '-')
+  case op of
+    '+' -> exprP >>= return . ExprAdd t
+    '-' -> exprP >>= return . ExprSub t
+    otherwise -> (return . ExprTerm) t
 
 termP :: ReadP Term
-termP = termMulP <++ termDivP <++ termFactorP
-
-termMulP :: ReadP Term
-termMulP = binaryOpP '*' factorP termP TermMul
-
-termDivP :: ReadP Term
-termDivP = binaryOpP '/' factorP termP TermDiv
-
-termFactorP :: ReadP Term
-termFactorP = do
+termP = do
   f <- factorP
-  (return . TermFactor) f
+  op <- option ' ' (char '*' +++ char '/')
+  case op of
+    '*' -> termP >>= return . TermMul f
+    '/' -> termP >>= return . TermDiv f
+    otherwise -> (return . TermFactor) f
 
 factorP :: ReadP Factor
-factorP = factorNumberP <++ factorPositiveP <++ factorNegative <++ factorExpressionP
+factorP = factorNumberP +++ factorPositiveP +++ factorNegative +++ factorExpressionP
 
 factorNumberP :: ReadP Factor
 factorNumberP = do
-  digits <- (many1 digitP) :: ReadP String
+  digits <- (munch1 isDigit) :: ReadP String
   (return . FactorNumber . read) digits
   where
-    digitP :: ReadP Char
-    digitP = satisfy (\c -> c >= '0' && c <= '9')
+    isDigit :: Char -> Bool
+    isDigit c = c >= '0' && c <= '9'
 
 factorPositiveP :: ReadP Factor
 factorPositiveP = do
-  satisfy (=='+')
-  skipSpaces
+  char '+'
   f <- factorP
   (return . FactorPositive) f
 
 factorNegative :: ReadP Factor
 factorNegative = do
-  satisfy (=='-')
-  skipSpaces
+  char '-'
   f <- factorP
   (return . FactorNegative) f
 
 factorExpressionP :: ReadP Factor
 factorExpressionP = do
-  satisfy (=='(')
-  skipSpaces
+  char '('
   e <- exprP
-  skipSpaces
-  satisfy (==')')
+  char ')'
   (return . FactorExpression) e
 
 binaryOpP :: Char -> (ReadP a) -> (ReadP b) -> (a -> b -> c) -> ReadP c
 binaryOpP c ra rb cons = do
   a <- ra
-  skipSpaces
-  satisfy (==c)
-  skipSpaces
+  char c
   b <- rb
   return (cons a b)
 
