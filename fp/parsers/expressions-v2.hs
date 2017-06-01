@@ -1,5 +1,5 @@
 import Data.List (intercalate)
-import Text.ParserCombinators.ReadP -- ((+++),(<++),ReadP,char,eof,munch1,option,readP_to_S)
+import Text.ParserCombinators.ReadP ((+++),ReadP,between,char,eof,munch1,option,readP_to_S)
 
 class Evaluable t where
   eval :: t -> Int
@@ -39,7 +39,6 @@ indent = unlines . map ("  " ++) . lines . show
 p = 1000000007
 
 main :: IO ()
---main = getLine >>= print . parseExpr
 main = getLine >>= print . (`mod` p) . eval . parseExpr . filter (/=' ')
 
 -- Parser
@@ -74,38 +73,19 @@ factorP :: ReadP Factor
 factorP = factorNumberP +++ factorPositiveP +++ factorNegative +++ factorExpressionP
 
 factorNumberP :: ReadP Factor
-factorNumberP = do
-  digits <- (munch1 isDigit) :: ReadP String
-  (return . FactorNumber . read) digits
+factorNumberP = munch1 isDigit >>= return . FactorNumber . read
   where
     isDigit :: Char -> Bool
     isDigit c = c >= '0' && c <= '9'
 
 factorPositiveP :: ReadP Factor
-factorPositiveP = do
-  char '+'
-  f <- factorP
-  (return . FactorPositive) f
+factorPositiveP = char '+' >> factorP >>= return . FactorPositive
 
 factorNegative :: ReadP Factor
-factorNegative = do
-  char '-'
-  f <- factorP
-  (return . FactorNegative) f
+factorNegative = char '-' >> factorP >>= return . FactorNegative
 
 factorExpressionP :: ReadP Factor
-factorExpressionP = do
-  char '('
-  e <- exprP
-  char ')'
-  (return . FactorExpression) e
-
-binaryOpP :: Char -> (ReadP a) -> (ReadP b) -> (a -> b -> c) -> ReadP c
-binaryOpP c ra rb cons = do
-  a <- ra
-  char c
-  b <- rb
-  return (cons a b)
+factorExpressionP = between (char '(') (char ')') exprP >>= return . FactorExpression
 
 -- Evaluator
 
