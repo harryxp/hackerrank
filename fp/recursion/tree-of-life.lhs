@@ -1,6 +1,6 @@
 > import Control.Applicative ((<|>))
 > import Control.Monad (foldM)
-> import Text.ParserCombinators.ReadP (ReadP, readP_to_S, satisfy)
+> import Text.ParserCombinators.ReadP (ReadP,char,readP_to_S)
 > import Text.Printf (printf)
 
 > import qualified Data.Map as Map (Map,fromList,lookup)
@@ -92,20 +92,20 @@ The string should be parsed into one tree, and one tree only.
 > treeP = onLeafP <|> offLeafP <|> branchP
 >
 > onLeafP :: ReadP Tree
-> onLeafP = satisfy (== 'X') >> return (Leaf { value = True })
+> onLeafP = char 'X' >> return (Leaf { value = True })
 >
 > offLeafP :: ReadP Tree
-> offLeafP = satisfy (== '.') >> return (Leaf { value = False })
+> offLeafP = char '.' >> return (Leaf { value = False })
 >
 > branchP :: ReadP Tree
 > branchP = do
->   satisfy (== '(')
+>   char '('
 >   lChild <- treeP
->   satisfy (== ' ')
->   v <- satisfy (== 'X') <|> satisfy (== '.')
->   satisfy (== ' ')
+>   char ' '
+>   v <- char 'X' <|> char '.'
+>   char ' '
 >   rChild <- treeP
->   satisfy (== ')')
+>   char ')'
 >   return (Branch { value = (v == 'X'), left = lChild, right = rChild })
 
 

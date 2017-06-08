@@ -2,22 +2,25 @@ import qualified Data.Set as S
 
 import Debug.Trace
 
+type Matrix = [[Int]]
+type Row = [Int]
 type Coord = (Int,Int)
+
 main :: IO ()
 main = getLine >> getLine >> getContents >>= print . solve . map (map read . words) . lines
 
-solve :: [[Int]] -> Int
+solve :: Matrix -> Int
 solve m =
   let
     ones :: S.Set Coord
-    ones = foldl foldRow S.empty (zip [0..] m)
+    ones = foldl accumRow S.empty (zip [0..] m)
   in (maximum . map S.size . regions) ones
 
-foldRow :: S.Set Coord -> (Int,[Int]) -> S.Set Coord
-foldRow ones (rowIdx,row) = foldl foldOne ones (map (\(colIdx,cell) -> (rowIdx,colIdx,cell)) (zip [0..] row))
+accumRow :: S.Set Coord -> (Int,Row) -> S.Set Coord
+accumRow ones (rowIdx,row) = foldl accumCell ones (map (\(colIdx,cell) -> (rowIdx,colIdx,cell)) (zip [0..] row))
 
-foldOne :: S.Set Coord -> (Int,Int,Int) -> S.Set Coord
-foldOne cs (rowIdx,colIdx,cell) = case cell == 1 of
+accumCell :: S.Set Coord -> (Int,Int,Int) -> S.Set Coord
+accumCell cs (rowIdx,colIdx,cell) = case cell == 1 of
   False -> cs
   True -> S.insert (rowIdx,colIdx) cs
 
