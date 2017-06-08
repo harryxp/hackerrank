@@ -1,6 +1,5 @@
-> import Control.Applicative ((<|>))
 > import Control.Monad (foldM)
-> import Text.ParserCombinators.ReadP (ReadP,char,readP_to_S)
+> import Text.ParserCombinators.ReadP ((+++),ReadP,char,readP_to_S)
 > import Text.Printf (printf)
 
 > import qualified Data.Map as Map (Map,fromList,lookup)
@@ -89,7 +88,7 @@ The string should be parsed into one tree, and one tree only.
 >   otherwise -> error "Can't parse the tree."
 >
 > treeP :: ReadP Tree
-> treeP = onLeafP <|> offLeafP <|> branchP
+> treeP = onLeafP +++ offLeafP +++ branchP
 >
 > onLeafP :: ReadP Tree
 > onLeafP = char 'X' >> return (Leaf { value = True })
@@ -102,7 +101,7 @@ The string should be parsed into one tree, and one tree only.
 >   char '('
 >   lChild <- treeP
 >   char ' '
->   v <- char 'X' <|> char '.'
+>   v <- char 'X' +++ char '.'
 >   char ' '
 >   rChild <- treeP
 >   char ')'
