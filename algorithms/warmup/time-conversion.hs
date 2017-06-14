@@ -1,4 +1,4 @@
-import Text.ParserCombinators.ReadP
+import Text.ParserCombinators.ReadP (ReadP,char,count,readP_to_S,satisfy)
 import Text.Printf
 
 main :: IO ()
@@ -10,14 +10,20 @@ main = do
 
 twelveP :: ReadP String
 twelveP = do
-    hour <- count 2 (satisfy (\char -> char >= '0' && char <= '9'))
-    satisfy (==':')
-    minute <- count 2 (satisfy (\char -> char >= '0' && char <= '9'))
-    satisfy (==':')
-    second <- count 2 (satisfy (\char -> char >= '0' && char <= '9'))
-    ampm <- count 2 (satisfy (\char -> char >= 'A' && char <= 'Z'))
+    hour <- count 2 isDigit
+    char ':'
+    minute <- count 2 isDigit
+    char ':'
+    second <- count 2 isDigit
+    ampm <- count 2 isLetter
     let hour' = buildHour ampm hour
     return (printf "%s:%s:%s" hour' minute second)
+
+isDigit :: ReadP Char
+isDigit = satisfy (\char -> char >= '0' && char <= '9')
+
+isLetter :: ReadP Char
+isLetter = satisfy (\char -> char >= 'A' && char <= 'Z')
 
 buildHour "AM" "12" = "00"
 buildHour "PM" "12" = "12"

@@ -1,6 +1,7 @@
-import Data.List
+import Control.Monad (replicateM_)
 
-hello_worlds n = (putStr . intercalate "\n" . replicate n) "Hello World" -- Complete this function
+hello_worlds :: Int -> IO ()
+hello_worlds n = replicateM_ n (putStrLn "Hello World") -- Complete this function
 
 -- This part is related to the Input/Output and can be used as it is
 -- Do not modify it

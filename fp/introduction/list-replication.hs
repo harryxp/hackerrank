@@ -1,6 +1,5 @@
 f :: Int -> [Int] -> [Int] -- Complete this function
-f n []     = []
-f n (x:xs) = (replicate n x) ++ f n xs
+f n xs = xs >>= replicate n
 
 -- This part handles the Input and Output and can be used as it is. Do not modify this part.
 main :: IO ()
