@@ -117,7 +117,7 @@ to specify a next state for each possible pattern of 4 cells:
 
 1111 1110 1101 ... 0000
 
-In this problem, this means 1 rules is just 16 pattern-state pairs, and there
+In this problem, this means 1 rule is just 16 pattern-state pairs, and there
 are 2^16 possible rules.
 
 > numCellsInNeighborhood = 4
